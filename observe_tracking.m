@@ -12,7 +12,7 @@ clc
 
 
 
-fig = figure('position',[20 20 130 650]);
+fig = figure('position',[20 20 1330 650]);
 
 
 global I
