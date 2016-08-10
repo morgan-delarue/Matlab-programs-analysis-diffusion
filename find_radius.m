@@ -1,6 +1,6 @@
 function find_radius(x,y)
 
-[n,der,center,radius,idx] = number_cluster(x,y,10,0.4);
+[n,der,center,radius,idx] = number_cluster(x,y,10,0.4); %greg's comment
 
 figure;
 hold all
