@@ -11,7 +11,7 @@ clc
 
 
 
-fig = figure('position',[20 20 1330 650]);
+fig = figure('position',[20 20 130 650]);
 
 global I
 global I_zoom
@@ -35,7 +35,7 @@ h_dt_text = uicontrol('Style','Text','String','dt =','Position',[30 70 35 25],'v
 h_dt_value = uicontrol('Style','Edit','String','0.1','Position',[65 70 35 25],'visible','off');
 h_conv_text = uicontrol('Style','Text','String','conv =','Position',[30 40 35 25],'visible','off');
 h_conv_value = uicontrol('Style','Edit','String','0.13','Position',[65 40 35 25],'visible','off');
-h_3D_value = uicontrol('Style','popupmenu','String','2D?¥???[Âª€¡ÿ]??}¯«
+h_3D_value = uicontrol('Style','popupmenu','String','2D?¬¥???[√•¬ª√õ√Å√ò]??}√∏√á
 h_slider_image = uicontrol('Style','slider','Position',[745 10 470 30],'visible','off',...
     'min',1,'callback',{@slider_image_callback},'value',1);
 uicontrol('Style','Pushbutton','String','Load .mat','Position',[30 130 70 25],'Callback',{@load_mat_callback});
