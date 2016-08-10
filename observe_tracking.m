@@ -11,7 +11,9 @@ clc
 
 
 
-fig = figure('position',[20 20 1350 650]);
+
+fig = figure('position',[20 20 130 650]);
+
 
 global I
 global I_zoom
