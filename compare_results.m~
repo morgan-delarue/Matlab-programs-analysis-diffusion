@@ -1,0 +1,26 @@
+function compare_results
+% Function that compare the results obtained for the hop diffusion in
+% violin plots
+
+
+[filename,path] = uigetfile('multiselect','on','.mat');
+cd(path)
+
+data_Rc = cell(1,length(filename));
+data_Din = cell(1,length(filename));
+data_Dout = cell(1,length(filename));
+data_Tin = cell(1,length(filename));
+
+for i = 1:length(filename)
+    
+    res = importdata(filename{i});
+    
+
+
+
+
+
+
+
+
+end

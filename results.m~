@@ -1,0 +1,165 @@
+% % Analysis diffusion data of GFA1 in 8-6 microfluidic bioreactors
+
+close all
+
+
+
+[filename,path] =uigetfile('multiselect','off','.txt');
+cd(path)
+% filename = '/Users/Morgan/Desktop/GFA1 muflu device/P=0 - prepacked/ResultsP0.txt';
+delimiter = '\t';
+startRow = 2;
+formatSpec = '%f%f%f%f%f%f%f%f%f%f%f%f%[^\n\r]';
+fileID = fopen(filename,'r');
+dataArray = textscan(fileID, formatSpec, 'Delimiter', delimiter, 'HeaderLines' ,startRow-1, 'ReturnOnError', false);
+fclose(fileID);
+
+conv = 0.130;
+dt = 0.1;
+
+Trajectory = dataArray{:, 2};
+Frame = dataArray{:, 3};
+x = dataArray{:, 4};
+y = dataArray{:, 5};
+z = dataArray{:, 6};
+m0 = dataArray{:, 7};
+m1 = dataArray{:, 8};
+m2 = dataArray{:, 9};
+m3 = dataArray{:, 10};
+m4 = dataArray{:, 11};
+NPscore = dataArray{:, 12};
+
+idx = find(diff(Trajectory) > 0);
+
+
+MSD = zeros(1,length(idx));
+time = zeros(1,length(idx));
+x_res = zeros(1,length(idx));
+y_res = zeros(1,length(idx));
+frame_res = zeros(1,length(idx));
+
+for i = 1:length(idx)
+    if i == 1
+        x_res(1:idx(i),i) = x(1:idx(i));
+        y_res(1:idx(i),i) = y(1:idx(i));
+        frame_res(1:idx(i),i) = Frame(1:idx(i));
+        
+        MSD(1:idx(i),i) = calculate_MSD(x(1:idx(i)),y(1:idx(i)),dt,conv);
+        
+%         SD(1:idx(i),i) = conv^2*((x(1:idx(i))-x(1)).^2 + (y(1:idx(i))-y(1)).^2);
+        
+        time(1:idx(i),i) = 0:dt:dt*(idx(i)-1);
+    elseif i > 1
+        x_res(1:(idx(i)-idx(i-1)),i) = x((idx(i-1)+1):idx(i));
+        y_res(1:(idx(i)-idx(i-1)),i) = y((idx(i-1)+1):idx(i));
+        frame_res(1:(idx(i)-idx(i-1)),i) = Frame((idx(i-1)+1):idx(i));
+        
+        MSD(1:(idx(i)-idx(i-1)),i) = calculate_MSD(x((idx(i-1)+1):idx(i)),y((idx(i-1)+1):idx(i)),dt,conv);
+        
+%         SD(1:(idx(i)-idx(i-1)),i) = conv^2*( (x((idx(i-1)+1):idx(i))-x(idx(i-1)+1)).^2 + (y((idx(i-1)+1):idx(i))-y(idx(i-1)+1)).^2 );
+        time(1:(idx(i)-idx(i-1)),i) = 0:dt:dt*(idx(i)-idx(i-1)-1);
+    end 
+    
+    
+    
+    
+end
+
+
+% MSD = SD;
+% MSD(1,:) = 0;
+% 
+% 
+% for i = 1:length(idx)
+%     if i == 1
+%         for j = 2:(idx(i))
+% %              MSD(j,i)=1/(dt*(idx(i))) .* sum(SD(1:j,i));
+%              MSD(j,i)=1/(dt*(j-1)) .* sum(SD(1:j,i));
+%         end
+%     elseif i>1
+%         for j = 2:(idx(i)-idx(i-1))
+% %              MSD(j,i)=1/(dt*(idx(i)-idx(i-1))) .* sum(SD(1:j,i));
+%              MSD(j,i)=1/(dt*(j-1)) .* sum(SD(1:j,i));
+%         end  
+%     end
+% end
+
+
+derivative_MSD = MSD;
+
+for i = 1:length(idx)
+    if i == 1
+        for j = 2:(idx(i))
+             derivative_MSD(j,i)=1/dt*(MSD(j,i)-MSD(j-1,i));
+        end
+    elseif i>1
+        for j = 2:(idx(i)-idx(i-1))
+             derivative_MSD(j,i)=1/dt*(MSD(j,i)-MSD(j-1,i));
+        end  
+    end
+end
+
+
+% figure
+% hold all
+% 
+% for i = 1:length(idx)
+%     if i >1 && (idx(i)-idx(i-1) > 50)
+%         plot(time(find(SD(:,i))>0,i),MSD(find(SD(:,i))>0,i))
+%     elseif i==1 && (idx(i) > 50)
+%         plot(time(find(SD(:,i))>0,i),MSD(find(SD(:,i))>0,i))
+%     end
+% end
+
+
+S = [];
+for i = 1:length(idx)
+    if i < 10
+        S = [S;strcat('part0000',num2str(i))];
+    elseif i >= 10 && i < 100
+        S = [S;strcat('part000',num2str(i))];
+    elseif i >= 100 && i < 999
+        S = [S;strcat('part00',num2str(i))];
+    elseif i >=1000 && i < 9999
+        S = [S;strcat('part0',num2str(i))];
+    elseif i >= 10000 && i < 99999
+        S = [S;strcat('part',num2str(i))];
+    end
+end
+
+field = cellstr(S);
+
+result = cell2struct(field','tracking',1);
+
+for i = 1:length(idx)
+    result(i).tracking = struct('time',time(find(MSD(:,i))>0,i),'x',x_res(find(SD(:,i))>0,i),'y',y_res(find(SD(:,i))>0,i),'MSD',MSD(find(SD(:,i))>0,i),'frame',frame_res(find(SD(:,i))>0,i));
+end
+
+% figure
+% hold all
+% 
+% for i = 1:length(idx)
+%     plot(result(i).part.time,result(i).part.MSD)
+% end
+% 
+% figure
+% hold all
+% 
+% for i = 1:length(idx)
+%     plot(result(i).part.x,result(i).part.y)
+% end
+
+save P=8_bis.mat result 
+
+
+% figure
+% hold all
+% 
+% for i = 1:length(idx)
+%     if i >1 && (idx(i)-idx(i-1) > 50)
+%         plot(time(find(SD(:,i))>0,i),smooth(derivative_MSD(find(SD(:,i))>0,i),7))
+%     elseif i==1 && (idx(i) > 50)
+%         plot(time(find(SD(:,i))>0,i),smooth(derivative_MSD(find(SD(:,i))>0,i),7))
+%     end
+% end
+
