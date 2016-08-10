@@ -11,7 +11,7 @@ global D_track_out
 global duration_track_c
 global duration_track_out
 
-fig = figure('position',[20 20 1330 650]);
+fig = figure('position',[20 20 1330 650]); % test
 
 uicontrol('Style','Pushbutton','String','Load result','Position',...
     [30 100 100 25],'Callback',{@load_mat_callback});
