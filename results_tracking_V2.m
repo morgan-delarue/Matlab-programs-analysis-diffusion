@@ -1,18 +1,18 @@
-% % Analysis diffusion data of mRNA and muNS microfluidic bioreactors
-
 function results_tracking_V2(dt,conv)
 
 % close all
 % clear all
 
 
-[filename,path] =uigetfile('multiselect','off','.txt','Select the file to analyze');
+[filename,path] =uigetfile('multiselect','on','.txt','Select the file to convert');
 cd(path)
+
+for m = 1:length(filename)
 % filename = '/Users/Morgan/Desktop/GFA1 muflu device/P=0 - prepacked/ResultsP0.txt';
 delimiter = '\t';
 startRow = 2;
 formatSpec = '%f%f%f%f%f%f%f%f%f%f%f%f%[^\n\r]';
-fileID = fopen(filename,'r');
+fileID = fopen(filename{m},'r');
 dataArray = textscan(fileID, formatSpec, 'Delimiter', delimiter, 'HeaderLines' ,startRow-1, 'ReturnOnError', false);
 fclose(fileID);
 
@@ -85,10 +85,13 @@ for i = 1:length(idx)
     
 end
 
-name_file = filename(1:strfind(filename,'.txt')-1);
+filename_int = filename{m};
+name_file = filename_int(1:strfind(filename_int,'.txt')-1);
 
 saving_name = strcat('tracked_',name_file,'.mat');
 save(saving_name,'result')
+
+end
 
 % uisave('result')
 % save P=8_bis.mat result 

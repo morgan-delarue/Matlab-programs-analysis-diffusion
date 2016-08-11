@@ -1,0 +1,51 @@
+function fit_multiple_data(D0,dt,conv,thresh_length)
+
+[filename,path] = uigetfile('.mat','multiselect','on');
+cd(path)
+
+f_exp = fittype('a^2*(1-exp(-b*x))');
+f_lin = fittype('a*x');
+
+h = waitbar(0,'Fitting and extracting data...');
+
+for i = 1:length(filename)
+    
+    result = struct();
+
+    result = importdata(filename{i});
+
+    num_tracks = size(result,1);
+    if num_tracks == 1
+       num_tracks = size(result,2);
+    end
+    
+    for j = 1:num_tracks
+        
+       isolate_idx = findlength(result(j).tracking.x) >= thresh_length); 
+        
+    end
+    
+    size_rest_data = length(isolate_idx);
+    
+    Din = [];
+    Dout = [];
+    Rc = [];
+    tres = [];
+    alpha = [];
+    
+    
+    count = 0;
+
+
+    
+    for j = 1:
+
+
+    end
+    
+    
+    count = count
+
+end
+
+end

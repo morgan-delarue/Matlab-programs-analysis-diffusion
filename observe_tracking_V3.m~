@@ -134,29 +134,11 @@ isolate_idx = find([dat{:,4}] == true);
     
 size_rest_data = length(isolate_idx);
 
-% S = [];
-% for i = 1:size_rest_data
-%     if i < 10
-%         S = [S;strcat('part0000',num2str(i))];
-%     elseif i >= 10 && i < 100
-%         S = [S;strcat('part000',num2str(i))];
-%     elseif i >= 100 && i < 999
-%         S = [S;strcat('part00',num2str(i))];
-%     elseif i >=1000 && i < 9999
-%         S = [S;strcat('part0',num2str(i))];
-%     elseif i >= 10000 && i < 99999
-%         S = [S;strcat('part',num2str(i))];
-%     end
-% end
-% 
-% field = cellstr(S);
-% 
-% extract = cell2struct(field','result',1);
-
 Din = [];
 Dout = [];
 Rc = [];
 tres = [];
+alpha = [];
 
 dt = str2double(get(h_dt_value,'String'));
 conv = str2double(get(h_conv_value,'String'));
@@ -165,13 +147,15 @@ f_exp = fittype('a^2*(1-exp(-b*x))');
 f_lin = fittype('a*x');
 count = 0;
 
+h = waitbar(0,'Fitting and extracting data...');
+
 for j = 1:size_rest_data
     
-    MSD = result(isolate_idx(j)).tracking.MSD;
+    time = result(isolate_idx(j)).tracking.time;
     x = result(isolate_idx(j)).tracking.x;
     y = result(isolate_idx(j)).tracking.y;
     
-    [n,der,center,radius,idx] = number_cluster(time',x',y',5,1,0);
+    [n,der,center,radius,idx] = number_cluster(time',x',y',5,0.8,0);
     idx_unique = unique(idx);
     for i = 1:n
             xr = x(idx==idx_unique(i));
@@ -179,17 +163,31 @@ for j = 1:size_rest_data
             
             [MSDr,tr] = calculate_MSD_V2(xr,yr,0,dt,conv);
             
-            [yy_lin,gof_lin] = fit(tr(1:end-5)',MSDr(1:end-5)',f_lin,'Startpoint',[D0]);
-            [yy_exp,gof_exp] = fit(tr(1:end-3)',MSDr(1:end-3)',f_exp,'Startpoint',[(conv*radius(i)),D0/((conv*radius(i))^2)],'Robust','Bisquare');
+            size_r = 4*round(length(xr)/5);
+            if round(size_r/2) == size_r/2
+                weight = [20*ones(1,size_r/2),ones(1,size_r/2)];
+            else
+                weight = [20*ones(1,round(size_r/2)),ones(1,floor(size_r/2))];
+            end
             
+            [yy_lin,gof_lin] = fit(tr(1:size_r)',MSDr(1:size_r)',f_lin,...
+                'Startpoint',[D0],'weight',weight,'display','off');
+            [yy_exp,gof_exp] = fit(tr(1:size_r)',MSDr(1:size_r)',f_exp,...
+                'Startpoint',[(conv*radius(i)),D0/((conv*radius(i))^2)],...
+                'Robust','Bisquare',...
+                'Weight',weight,'display','off');
+  
             lin_or_expo = gof_lin.rsquare/gof_exp.rsquare;
             
             if lin_or_expo < 0.7
                 Din = [Din;yy_exp.a^2*yy_exp.b/4];
                 Rc = [Rc;sqrt(2/5)*yy_exp.a];
                 tres = [tres;length(xr)*dt];
-            elseif lin_or_exp > 0.7 
-                Dout = [Dout;yy_lin.a];
+            elseif lin_or_expo > 0.7
+                yy_pow = fit(tr(2:size_r)',MSDr(2:size_r)','power1',...
+                'Startpoint',[D0 1],'weight',weight(2:end),'display','off');
+                Dout = [Dout;yy_pow.a];
+                alpha = [alpha;yy_pow.b];
             end
             
     end
@@ -197,72 +195,11 @@ for j = 1:size_rest_data
 count = count +1; 
 waitbar(count/size_rest_data)
   
-end
-
-
-
-% sliding_step = str2double(get(h_sliding_step,'String'));
-% sliding_size = str2double(get(h_sliding_size,'String'));
-% 
-% h = waitbar(0,'Fitting and extracting data...');
-% chunks_number = zeros(1,size_rest_data);
-% 
-% for j = 1:size_rest_data
-%     
-%     MSD_length = length(result(isolate_idx(j)).tracking.x);
-%     chunks_number(j) = floor((MSD_length-sliding_size)/sliding_step);
-%     
-% end
-% 
-% num_steps = sum(chunks_number);
-% count = 0;
-% 
-% for j = 1:size_rest_data
-%     
-%     MSD_length = length(result(isolate_idx(j)).tracking.x);
-%     chunks_number(j) = floor((MSD_length-sliding_size)/sliding_step);
-%     
-%     D = zeros(1,chunks_number(j));
-%     R_c = zeros(1,chunks_number(j));
-%     t_res = zeros(1,chunks_number(j));
-%     
-%     for i = 1:chunks_number(j)
-%         t_res(i) = result(isolate_idx(j)).tracking.time(1+(i-1)*sliding_step);
-%     end
-%     
-%     MSD_sliding = zeros(sliding_size,chunks_number(j));
-%        
-%     for i = 1:chunks_number(j)
-%         if exist_z == 0
-%             MSD_sliding(:,i) = calculate_MSD(result(isolate_idx(j)).tracking.x(1+(i-1)*sliding_step:(i-1)*sliding_step + sliding_size),...
-%                 result(isolate_idx(j)).tracking.y(1+(i-1)*sliding_step:(i-1)*sliding_step + sliding_size),...
-%                 0,dt,conv);
-%         elseif exist_z == 1
-%                 MSD_sliding(:,i) = calculate_MSD(result(isolate_idx(j)).tracking.x(1+(i-1)*sliding_step:(i-1)*sliding_step + sliding_size),...
-%                 result(isolate_idx(j)).tracking.y(1+(i-1)*sliding_step:(i-1)*sliding_step + sliding_size),...
-%                 result(isolate_idx(j)).tracking.z(1+(i-1)*sliding_step:(i-1)*sliding_step + sliding_size),...
-%                 dt,conv);
-%         end
-%         
-%     end
-%     
-% 
-%     for i = 1:chunks_number(j)
-%         count = count + 1;
-%           t = result(isolate_idx(j)).tracking.time(1+(i-1)*sliding_step:(i-1)*sliding_step+sliding_size);
-%           t_fit = t-t(1);
-%           yy = fit(t_fit(1:end-1),...
-%               MSD_sliding(1:end-1,i),f,'Lower',[0 0],'Robust','BiSquare','StartPoint',[1,3]);
-% 
-%           D(i) = yy.b*yy.a/4;
-%           R_c(i) = sqrt(2*yy.a/5);
-%           waitbar(count/num_steps)
-%     end
-%         
-%     extract(j).result = struct('time',t_res,'D',D,'Rc',R_c);
-% end        
+end       
  
-saving_name = strcat('extracted_',filename);
+saving_name = strcat('result_',filename);
+
+extract = struct('Din',Din,'Dout',Dout,'Rc',Rc,'Tres',tres,'alpha',alpha);
 
 save(saving_name,'extract')
 % uisave('extract')
@@ -349,6 +286,7 @@ function extract_isolate_curve (source,eventdata)
 
 dt = str2double(get(h_dt_value,'String'));
 conv = str2double(get(h_conv_value,'String'));
+D0 = str2double(get(h_diff_value,'String'));
 f_exp = fittype('a^2*(1-exp(-b*x))');
 f_lin = fittype('a*x');
     
@@ -368,7 +306,7 @@ f_lin = fittype('a*x');
         
         z = zeros(size(time));
         
-        [n,der,center,radius,idx] = number_cluster(time',x',y',5,1,0);
+        [n,der,center,radius,idx] = number_cluster(time',x',y',5,0.8,0);
         idx_unique = unique(idx);
 
 
@@ -385,12 +323,24 @@ f_lin = fittype('a*x');
             xr = x(idx==idx_unique(i));
             yr = y(idx==idx_unique(i));
             
+            
             [MSDr,tr] = calculate_MSD_V2(xr,yr,0,dt,conv);
             
-            [yy_lin,gof_lin] = fit(tr(1:end-5)',MSDr(1:end-5)',f_lin,'Startpoint',[0.005]);
-            [yy_exp,gof_exp] = fit(tr(1:end-3)',MSDr(1:end-3)',f_exp,'Startpoint',[(conv*radius(i)),0.005/((conv*radius(i))^2)],'Robust','Bisquare');
+            size_r = 4*round(length(xr)/5);
+            if round(size_r/2) == size_r/2
+                weight = [20*ones(1,size_r/2),ones(1,size_r/2)];
+            else
+                weight = [20*ones(1,round(size_r/2)),ones(1,floor(size_r/2))];
+            end
             
-            lin_or_expo = gof_lin.rsquare/gof_exp.rsquare;
+%             [yy_lin,gof_lin] = fit(tr(1:size_r)',MSDr(1:size_r)',f_lin,...
+%                 'Startpoint',[D0],'weight',weight,'display','off');
+%             [yy_exp,gof_exp] = fit(tr(1:size_r)',MSDr(1:size_r)',f_exp,...
+%                 'Startpoint',[(conv*radius(i)),D0/((conv*radius(i))^2)],...
+%                 'Robust','Bisquare',...
+%                 'Weight',weight,'display','off');
+            
+%             lin_or_expo = gof_lin.rsquare/gof_exp.rsquare;
             
             subplot(1,3,2)
             title('Clustered tracks')
@@ -402,11 +352,13 @@ f_lin = fittype('a*x');
             title('Reduced MSD')
             hold all
             plot(tr,MSDr)
-            if lin_or_expo < 0.7
-                plot(yy_exp,'r-')
-            elseif lin_or_expo > 0.7
-                plot(yy_lin,'r--')
-            end
+%             if lin_or_expo < 0.7
+%                 plot(yy_exp,'r-')
+%             elseif lin_or_expo > 0.7
+%                 yy_pow = fit(tr(2:size_r)',MSDr(2:size_r)','power1',...
+%                 'Startpoint',[0.005 1],'weight',weight(2:end),'display','off');
+%                 plot(yy_pow,'r--')
+%             end
                 
 %             plot(time,MSD,'k')
         end

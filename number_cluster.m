@@ -4,6 +4,8 @@ function [n,der,center,radius,idx] = number_cluster(time,x,y,num_max,thresh,plot
 
 dev = zeros(1,num_max);
 
+time = 1000*time/max(time);
+
 for i = 1:num_max
     [idx,c] = kmedoids([time;x;y]',i,'algorithm','clara','replicates',50,'Distance','seuclidean');
 %     idx = clusterdata([time;x;y]',i);
@@ -20,7 +22,7 @@ der = diff(diff(dev));
 
 % n = min(find(der < thresh));
 n = find(der == min(der))+1;
-[idx,c] = kmedoids([x;y]',n,'algorithm','clara','replicates',100,'Distance','seuclidean');
+[idx,c] = kmedoids([time;x;y]',n,'algorithm','clara','replicates',100,'Distance','seuclidean');
 
 %% Extract informations about clusters
 
