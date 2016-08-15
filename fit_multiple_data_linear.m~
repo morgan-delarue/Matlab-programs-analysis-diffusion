@@ -1,4 +1,4 @@
-function fit_multiple_data(D0,dt,conv,thresh_length)
+function fit_multiple_data_linear(dt,conv,thresh_length)
 
 [filename,path] = uigetfile('.mat','multiselect','on');
 cd(path)
@@ -30,19 +30,16 @@ for m = 1:length(filename)
     
     size_rest_data = length(isolate_idx);
     
-    Din = [];
-    Dout = [];
-    Rc = [];
-    tres = [];
-    alpha = [];
-    
+    D = [];
 
     for j = 1:size_rest_data
 
     time = result(isolate_idx(j)).tracking.time;
+    MSD = time = result(isolate_idx(j)).tracking.time;
+    
     x = result(isolate_idx(j)).tracking.x;
     y = result(isolate_idx(j)).tracking.y;
-    j
+
     [n,der,center,radius,idx] = number_cluster(time',x',y',5,0.8,0);
     idx_unique = unique(idx);
     for i = 1:n
@@ -76,7 +73,7 @@ for m = 1:length(filename)
                 yy_pow = fit(tr(2:size_r)',MSDr(2:size_r)','power1',...
                 'Startpoint',[D0 1],'weight',weight(2:end),'display','off',...
                 'Lower',[0 0]);
-                Dout = [Dout;yy_lin.a];
+                Dout = [Dout;yy_pow.a];
                 alpha = [alpha;yy_pow.b];
             end
             

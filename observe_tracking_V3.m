@@ -11,7 +11,7 @@ clc
 
 
 
-fig = figure('position',[20 20 650 650]);
+fig = figure('position',[20 20 1300 650]);
 
 global I
 global I_zoom
@@ -27,12 +27,19 @@ global conv
 global dt
 global filename
 global exist_z
+global fig_load_image
+global h_frame_start
+global h_frame_end
+global path_im
+global filename_im
+global h_slider_image
+
 
 exist_z = 0;
 isolate_idx = [];
 
-h_load_images = uicontrol('Style','Pushbutton','String','Load .tif','Position',[30 100 70 25],...
-    'Callback',{@load_image_callback},'visible','off');
+h_load_images = uicontrol('Style','Pushbutton','String','Load .tif','Position',[30 160 70 25],...
+    'Callback',{@pre_load_image_callback},'visible','off');
 h_dt_text = uicontrol('Style','Text','String','dt =','Position',[30 70 35 25],'visible','off');
 h_dt_value = uicontrol('Style','Edit','String','0.1','Position',[65 70 35 25],'visible','off');
 h_diff_text = uicontrol('Style','Text','String','D =','Position',[30 100 35 25],'visible','off');
@@ -41,8 +48,8 @@ h_conv_text = uicontrol('Style','Text','String','conv =','Position',[30 40 35 25
 h_conv_value = uicontrol('Style','Edit','String','0.13','Position',[65 40 35 25],'visible','off');
 h_3D_value = uicontrol('Style','popupmenu','String','2D|3D','Position',[30,10,75,25],'Visible','off',...
     'callback',{@threeD_callback});
-h_slider_image = uicontrol('Style','slider','Position',[745 10 470 30],'visible','off',...
-    'min',1,'callback',{@slider_image_callback},'value',1);
+% h_slider_image = uicontrol('Style','slider','Position',[745 10 470 30],'visible','off',...
+%     'min',1,'callback',{@slider_image_callback},'value',1);
 uicontrol('Style','Pushbutton','String','Load .mat','Position',[30 130 70 25],'Callback',{@load_mat_callback});
 h_thresh_length = uicontrol('Style','Edit','String','40','Position',[540 300 70 25],'visible','off');
 h_thresh_length_text = uicontrol('Style','text','String','Thresh. length','Position',[540 320 70 25],'visible','off');
@@ -185,7 +192,8 @@ for j = 1:size_rest_data
                 tres = [tres;length(xr)*dt];
             elseif lin_or_expo > 0.7
                 yy_pow = fit(tr(2:size_r)',MSDr(2:size_r)','power1',...
-                'Startpoint',[D0 1],'weight',weight(2:end),'display','off');
+                'Startpoint',[D0 1],'weight',weight(2:end),'display','off',...
+                'Lower',[0 0]);
                 Dout = [Dout;yy_pow.a];
                 alpha = [alpha;yy_pow.b];
             end
@@ -357,7 +365,8 @@ f_lin = fittype('a*x');
                 plot(yy_exp,'r-')
             elseif lin_or_expo > 0.7
                 yy_pow = fit(tr(2:size_r)',MSDr(2:size_r)','power1',...
-                'Startpoint',[0.005 1],'weight',weight(2:end),'display','off');
+                'Startpoint',[0.005 1],'weight',weight(2:end),'display','off',...
+                'Lower',[0 0]);
                 plot(yy_pow,'r--')
             end
                 
@@ -425,21 +434,18 @@ end
 
 function zoom_trace_callback (source,eventdata)
    
-    if get(h_zoom_trace_box,'Value') == 1
-        if length(isolate_idx) == 1
+if get(h_zoom_trace_box,'Value') == 1
+    if length(isolate_idx) == 1
             
-    size_zoom = floor(str2double(get(h_zoom_trace_size,'String')));
-    I_zoom = zeros(size_zoom+1,size_zoom+1,size_tif);
+        size_zoom = floor(str2double(get(h_zoom_trace_size,'String')));
+        I_zoom = zeros(size_zoom+1,size_zoom+1,size_tif);
        
-    mean_x = mean(result(isolate_idx).tracking.x);
-    mean_y = mean(result(isolate_idx).tracking.y);
+        mean_x = mean(result(isolate_idx).tracking.x);
+        mean_y = mean(result(isolate_idx).tracking.y);
     
-    rect_zoom = [floor(mean_x - size_zoom/2) floor(mean_y - size_zoom/2) size_zoom size_zoom];
-    
-    
-           
+        rect_zoom = [floor(mean_x - size_zoom/2) floor(mean_y + size_zoom/2) size_zoom size_zoom];
+
             for i = 1:size_tif
-            
                I_zoom(:,:,i) = imcrop(I(:,:,i),rect_zoom);
             end
             
@@ -463,8 +469,8 @@ function clear_isolate_callback (source,eventdata)
     
     thresh_length = str2double(get(h_thresh_length,'String'));
 
-delete(subplot(2,1,1))
-subplot(2,1,1)
+delete(subplot(2,2,1))
+subplot(2,2,1)
 hold all
 
 dat=get(hresults_button,'Data');
@@ -491,8 +497,8 @@ dat = get(hresults_button,'Data');
 
 isolate_idx = find([dat{:,4}] == true);
    
-delete(subplot(2,1,1))
-subplot(2,1,1)
+delete(subplot(2,2,1))
+subplot(2,2,1)
 hold all
 
 % for i = 1:length(isolate_idx)
@@ -516,8 +522,8 @@ function replot_callback (source,eventdata)
         
 thresh_length = str2double(get(h_thresh_length,'String'));
 
-delete(subplot(2,1,1))
-subplot(2,1,1)
+delete(subplot(2,2,1))
+subplot(2,2,1)
 hold all
 
 dat=get(hresults_button,'Data');
@@ -556,8 +562,8 @@ end
 
 % exist_z = exist('result(1).tracking.z')
 
-delete(subplot(2,1,1))
-subplot(2,1,1)
+delete(subplot(2,2,1))
+subplot(2,2,1)
 hold all
 for i = 1:num_tracks
     plot(result(i).tracking.time,result(i).tracking.MSD)
@@ -574,20 +580,10 @@ for i = 1:num_tracks
 end
 
 
-
-% columnname =   {'Trajectory','Length','Visible ?', 'Isolate ?'};
-% columnformat = {'numeric','numeric',[],[]}; 
-% columneditable =  [false edit true true]; 
-% hresults_button = uitable('Position',...
-%             [180,10,350,330], 'Data', dat,... 
-%             'ColumnName', columnname,...
-%             'ColumnFormat', columnformat,...
-%             'ColumnEditable', columneditable);
-
 set(hresults_button,'visible','on')
 set(hresults_button,'Data',dat)
         
-% set(h_load_images,'visible','on')   
+set(h_load_images,'visible','on')   
 set(h_thresh_length,'visible','on')
 set(h_thresh_length_text,'visible','on')
 set(h_replot_button,'visible','on')
@@ -614,23 +610,54 @@ conv = str2double(get(h_conv_value,'String'));
 
 end
 
+function pre_load_image_callback (source,eventdata)
+    
+[filename_im,path_im] = uigetfile('multiselect','off','.tif');
+cd(path_im)
+size_tif = size(imfinfo(filename_im),1);  
+
+fig_load_image = figure('position',[500 500 500 500]);
+uicontrol('style','text','position',[150 250 50 25],...
+    'String','From frame ...');
+h_frame_start = uicontrol('Style','Edit','Position',[200 250 25 25],...
+    'String','1');
+uicontrol('style','text','position',[230 250 50 25],...
+    'String','to frame ...');
+h_frame_end = uicontrol('Style','Edit','Position',[280 250 25 25],...
+    'String','');
+set(h_frame_end,'String',num2str(size_tif));
+
+uicontrol('Style','Pushbutton','String','Go!','Position',[310 250 25 25],...
+    'Callback',{@load_image_callback});
+
+
+end
+
 function load_image_callback (source,eventdata)
+
+frame_in = floor(str2double(get(h_frame_start,'String')));
+frame_end = floor(str2double(get(h_frame_end,'String')));
+
+close(fig_load_image)
         
-[filename,path] = uigetfile('multiselect','off','.tif');
+% [filename,path] = uigetfile('multiselect','off','.tif');
+% 
+% cd(path)
+% size_tif = size(imfinfo(filename),1);
+size_tif = frame_end-frame_in;
 
-cd(path)
-size_tif = size(imfinfo(filename),1);
-
-I_1 = imread(filename,'index',1);
+I_1 = imread(filename_im,'index',1);
 m = size(I_1,1);
 n = size(I_1,2);
 
 I = zeros(m,n,size_tif);
 
-for i = 1:size_tif
-    I(:,:,i) = imread(filename,'index',i);
+for i = frame_in:frame_end
+    I(:,:,i) = imread(filename_im,'index',i);
 end
 
+h_slider_image = uicontrol('Style','slider','Position',[745 10 470 30],'visible','off',...
+    'min',1,'callback',{@slider_image_callback},'value',1);
 set(h_slider_image,'visible','on');
 set(h_slider_image,'max',size_tif);
 
@@ -695,7 +722,8 @@ if isempty(isolate_idx) == 0
         n = find(result(isolate_idx(i)).tracking.frame == frame_num);
         if isempty(n) == 0
             if get(h_zoom_trace_box,'Value') == 1
-                plot(result(isolate_idx(i)).tracking.x(1:n)-mean_x+size_zoom/2,result(isolate_idx(i)).tracking.y(1:n)-mean_y+size_zoom/2,'-')
+                plot(result(isolate_idx(i)).tracking.x(1:n)+mean_x+size_zoom/2,...
+                    result(isolate_idx(i)).tracking.y(1:n)+mean_y+size_zoom/2,'-')
             else
                 plot(result(isolate_idx(i)).tracking.x(1:n),result(isolate_idx(i)).tracking.y(1:n),'-')
                 text(result(isolate_idx(i)).tracking.x(n),result(isolate_idx(i)).tracking.y(n),num2str(isolate_idx(i)),'color','w')
