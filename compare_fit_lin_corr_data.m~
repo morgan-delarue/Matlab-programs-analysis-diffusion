@@ -1,0 +1,44 @@
+function compare_fit_lin_corr_data
+
+[filename,path] = uigetfile('multiselect','on','.mat');
+cd(path)
+
+figure('position',[50 300 2000 600]);
+
+data_D_lin = cell(1,length(filename));
+data_D_corr = cell(1,length(filename));
+name = cell(1,length(filename));
+
+for n  = 1:length(filename)
+    
+    res = importdata(filename{n});
+    
+    data_D_lin{n} = res.lin.D_lin;
+    
+    name{n} = filename{n};
+
+    size_1 = size(
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+end
+
+title('Diffusion calculated from linear fitting')
+distributionPlot(data_D,'xName',name,'yLabel','Diffusion (\mum^2.s^{-1})')
+
+
+end

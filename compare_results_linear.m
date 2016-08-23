@@ -7,7 +7,6 @@ function compare_results_linear
 cd(path)
 
 data_D = cell(1,length(filename));
-
 name = cell(1,length(filename));
 
 for i = 1:length(filename)
@@ -20,8 +19,8 @@ end
     
 figure('position',[50 300 2000 600])
 % subplot(1,5,1)
-title('Diffusion in corral')
-distributionPlot(data_D,'xName',name,'yLabel','Diffusion (um^2/s)')
+title('Diffusion calculated from linear fitting')
+distributionPlot(data_D,'xName',name,'yLabel','Diffusion (\mum^2.s^{-1})')
 
 
 

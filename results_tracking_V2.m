@@ -16,9 +16,6 @@ fileID = fopen(filename{m},'r');
 dataArray = textscan(fileID, formatSpec, 'Delimiter', delimiter, 'HeaderLines' ,startRow-1, 'ReturnOnError', false);
 fclose(fileID);
 
-conv = 0.130;
-dt = 0.1;
-
 Trajectory = dataArray{:, 2};
 Frame = dataArray{:, 3};
 x = dataArray{:, 4};

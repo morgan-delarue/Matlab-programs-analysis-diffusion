@@ -1,6 +1,6 @@
 % % Analysis diffusion data of mRNA and muNS microfluidic bioreactors
 
-function results_tracking_V2(dt,conv)
+function results_tracking(dt,conv)
 
 % close all
 % clear all
@@ -16,8 +16,7 @@ fileID = fopen(filename,'r');
 dataArray = textscan(fileID, formatSpec, 'Delimiter', delimiter, 'HeaderLines' ,startRow-1, 'ReturnOnError', false);
 fclose(fileID);
 
-conv = 0.130;
-dt = 0.1;
+
 
 Trajectory = dataArray{:, 2};
 Frame = dataArray{:, 3};

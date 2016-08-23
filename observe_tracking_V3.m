@@ -219,6 +219,7 @@ end
 
 function sliding_MSD_callback (source,eventdata)
 
+D0 = str2double(get(h_diff_value,'String'));
 dt = str2double(get(h_dt_value,'String'));
 conv = str2double(get(h_conv_value,'String'));
     
@@ -246,41 +247,95 @@ if length(isolate_idx) == 1
             MSD_sliding(:,i) = calculate_MSD(result(isolate_idx).tracking.x(1+(i-1)*sliding_step:(i-1)*sliding_step + sliding_size),...
                 result(isolate_idx).tracking.y(1+(i-1)*sliding_step:(i-1)*sliding_step + sliding_size),...
                 0,dt,conv);
+            MSD_sliding(:,i) = MSD_sliding(:,i) - MSD_sliding(1,i);
         elseif exist_z == 1
             MSD_sliding(:,i) = calculate_MSD(result(isolate_idx).tracking.x(1+(i-1)*sliding_step:(i-1)*sliding_step + sliding_size),...
                 result(isolate_idx).tracking.y(1+(i-1)*sliding_step:(i-1)*sliding_step + sliding_size),...
                 result(isolate_idx).tracking.z(1+(i-1)*sliding_step:(i-1)*sliding_step + sliding_size),...
                 dt,conv);
+            MSD_sliding(:,i) = MSD_sliding(:,i) - MSD_sliding(1,i);
         end
     end
     
-f = fittype('a^2*(1-exp(-b*x))');
+    
+    
+fexp = fittype('a^2*(1-exp(-b*x))');
+flin = fittype('a*x');
+fpow = fittype('a*x^b');
    
 figure('Position',[100 100 1200 500]);
 
 for i = 1:chunks_number
     
     t = result(isolate_idx).tracking.time(1+(i-1)*sliding_step:(i-1)*sliding_step+sliding_size);
+%     length(t)
+%     t = (i-1)*sliding_step:dt:(i-1)*sliding_step + sliding_size;
+%     length(t)
     t_fit = t-t(1);
-    yy = fit(t_fit(1:end-1),...
-        MSD_sliding(1:end-1,i),f,'Lower',[0 0],'Robust','BiSquare','StartPoint',[1,3]);
+    [yy_exp,gof_exp] = fit(t_fit(1:end-1),...
+        MSD_sliding(1:end-1,i),fexp,'Lower',[0 0],'Robust','BiSquare','StartPoint',[1,3]);
+    [yy_lin,gof_lin] = fit(t_fit(1:end-1),...
+        MSD_sliding(1:end-1,i),flin,'Robust','BiSquare','StartPoint',[D0]);
 
-    D(i) = yy.b*yy.a/4;
-    R_c(i) = sqrt(2*yy.a/5);
+    lin_or_expo = gof_lin.rsquare/gof_exp.rsquare;
+    
+    if lin_or_expo < 0.7
+                
+        D(i) = yy_exp.b*yy_exp.a^2/4;
+        R_c(i) = sqrt(5/2)*yy_exp.a;
 
-    subplot(2,2,1)
-    hold on
-%     plot(t_fit+t(1),yy.a^2*(1-exp(-yy.b*t_fit)),'r')
-    plot(result(isolate_idx).tracking.time(1+(i-1)*sliding_step:(i-1)*sliding_step+sliding_size),MSD_sliding(:,i),'b')
+        subplot(2,2,1)
+        title('Chunked MSD')
+        hold on
+        plot(t_fit+t(1),yy_exp.a^2*(1-exp(-yy_exp.b*t_fit)),'r')
+        plot(result(isolate_idx).tracking.time(1+(i-1)*sliding_step:(i-1)*sliding_step+sliding_size),MSD_sliding(:,i),'b')
+        
+        subplot(2,2,2)
+        plot(t_res(1:i),R_c(1:i),'r')
+        title('Radius of confinement')
+        axis([0 t_res(end) 0 1])
     
-    subplot(2,2,2)
-    plot(t_res(1:i),R_c(1:i),'r')
+        subplot(2,2,3)
+        plot(t_res(1:i),D(1:i),'r')
+        title('Diffusion coefficient')
     
-    subplot(2,2,3)
-    plot(t_res(1:i),D(1:i),'r')
+    elseif lin_or_expo > 0.7
+        
+%         yy_pow = fit(t_fit(1:end-1),...
+%         MSD_sliding(1:end-1,i),fpow,'Robust','BiSquare','StartPoint',[D0 1],'Upper',[10 10],'Lower',[0 0]);
+        
+        D(i) = yy_lin.a/4;
+        R_c(i) = 10;
+        
+        subplot(2,2,1)
+        title('Chunked MSD')
+        hold on
+        plot(t_fit+t(1),yy_lin.a*t_fit,'r--')
+        plot(result(isolate_idx).tracking.time(1+(i-1)*sliding_step:(i-1)*sliding_step+sliding_size),MSD_sliding(:,i),'b')
+        
+%         subplot(2,2,4)
+%         title('D_\alpha VS \alpha')
+%         hold all
+%         plot(yy_pow.a,yy_pow.b,'ro')
+        
+        subplot(2,2,2)
+        plot(t_res(1:i),R_c(1:i),'r')
+        title('Radius of confinement')
+        axis([0 t_res(end) 0 1])
     
-    subplot(2,2,4)
-    plot(R_c(1:i),D(1:i),'ro')
+        subplot(2,2,3)
+        plot(t_res(1:i),D(1:i),'r')
+        title('Diffusion coefficient')
+        
+    end
+        
+        
+    
+
+    
+    
+    
+    
 end
 
 
@@ -334,6 +389,8 @@ f_lin = fittype('a*x');
             if length(xr) > 10
             
             [MSDr,tr] = calculate_MSD_V2(xr,yr,0,dt,conv);
+            
+            MSDr = MSDr - MSDr(1);
             
             size_r = 4*round(length(xr)/5);
             if round(size_r/2) == size_r/2
