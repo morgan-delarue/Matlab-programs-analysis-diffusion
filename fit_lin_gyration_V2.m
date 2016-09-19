@@ -70,6 +70,7 @@ size_rest_data = length(isolate_idx);
 
 corr_fit = cell(size_rest_data,3);
 
+
     
 parfor j = 1:size_rest_data
     
@@ -125,10 +126,6 @@ for i = 1:chunks_number
         
         Dexpo(i) = yy_lin.a/4;
 
-    
-    
-        
-   
 end
 
     corr_fit(j,:) = {{Dexpo},{R_c},{isolate_idx(j)}};
@@ -178,7 +175,7 @@ end
 
 MSD = {{MSD_e},{MSD_t}};
 
-%% Calculating of the ergodicity
+%% Calculating the ergodicity
 
 isolate_idx = [];
 
@@ -198,6 +195,48 @@ end
 
 ergo = {eps};
 
+%% Calculating the displacement distribution and orientation distribution
+
+isolate_idx = [];
+
+for j = 1:num_tracks
+   if length(result(j).tracking.x) >=  min_track_length_lin
+        isolate_idx = [isolate_idx;j];
+   end
+end
+
+size_rest_data = length(isolate_idx);
+disp_res = cell(1,Tergo);
+disp_ori = cell(1,Tergo);
+
+displ = [];
+ori = [];
+
+for i = 1:Tergo
+    for j = 1:size_rest_data  
+        displ = [displ;conv*displacement(result(isolate_idx(j)).tracking.x,result(isolate_idx(j)).tracking.y,i)'];
+        ori = [ori;disp_corr(result(isolate_idx(j)).tracking.x,result(isolate_idx(j)).tracking.y,i)'];
+    end
+    disp_res{i} = {displ};
+    disp_ori{i} = {ori};
+end
+
+
+
+%% Calculating the next step correlation
+
+next_step_res = [];
+step_next_size = [];
+
+for j = 1:size_rest_data 
+    [next_step_calc,step_next_size_calc] = next_step(result(isolate_idx(j)).tracking.x,result(isolate_idx(j)).tracking.y);
+    next_step_res = [next_step_res;conv*next_step_calc'];
+    step_next_size = [step_next_size;conv*step_next_size_calc'];
+end
+
+next = {{next_step_res},{step_next_size}};
+
+
 %% Last step, saving the data
 
 
@@ -207,11 +246,18 @@ extract_lin = cell2struct(lin_fit,'D_lin',1);
 row_headings = {'MSD_ens','MSD_time'};
 extract_MSD = cell2struct(MSD,row_headings,2);
 extract_ergo = cell2struct(ergo,'ergo',1);
+extract_step = cell2struct(disp_res,'step',1);
+extract_ori = cell2struct(disp_ori,'ori',1);
+row_headings = {'corr','step_size'};
+extract_next = cell2struct(next,row_headings,2);
 
 extract = struct('lin',extract_lin,...
     'corr',extract_corr,...
     'MSD',extract_MSD,...
-    'ergo',extract_ergo);
+    'ergo',extract_ergo,...
+    'step',extract_step,...
+    'ori',extract_ori,...
+    'next',extract_next);
 
 saving_name = strcat('gyration_V2_',filename{k});
 
