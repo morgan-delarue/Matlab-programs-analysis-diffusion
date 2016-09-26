@@ -155,26 +155,47 @@ for n  = 1:num
 
 end
 
+vec_color = zeros(3,7);
+vec_color(:,1) = [0 0.45 0.74];
+vec_color(:,2) = [0.85 0.33 0.1];
+vec_color(:,3) = [0.93 0.69 0.13];
+vec_color(:,4) = [0.49 0.18 0.56];
+vec_color(:,5) = [0.47 0.67 0.19];
+vec_color(:,6) = [0.3 0.75 0.93];
+vec_color(:,7) = [0.64 0.08 0.18];
 
 subplot(1,7,1)
 title('Diffusion calculated from linear fitting')
-if multiple == 1
+% if multiple == 1
     h = distributionPlot(data_D_lin,'xName',name,'yLabel','Diffusion (\mum^2.s^{-1})',...
         'histOpt',2,'histOri','right','xyOri','flipped','showMM',4);
-elseif multiple == 0
-    plot(nbinD,pD/trapz(nbinD,pD),'bo-','LineWidth',2)
-    hold all
-    plot(yyD,'r')
-end
+    for i = 1:length(h{1}(:))
+        if i > 7
+            set(h{1}(i),'FaceColor',vec_color(:,i-7));
+        else
+            set(h{1}(i),'FaceColor',vec_color(:,i));
+        end
+    end
+% elseif multiple == 0
+%     plot(nbinD,pD/trapz(nbinD,pD),'bo-','LineWidth',2)
+%     hold all
+%     plot(yyD,'r')
+% end
 
 subplot(1,7,3)
 title('Radius of gyration')
 h = distributionPlot(data_R_c,'xName',name,'yLabel','Radius of gyration (\mum)',...
     'histOpt',0,'histOri','right','xyOri','flipped','color','k','showMM',0);
+    for i = 1:length(h{1}(:))
+        if i > 7
+            set(h{1}(i),'FaceColor',vec_color(:,i-7));
+        else
+            set(h{1}(i),'FaceColor',vec_color(:,i));
+        end
+    end
 
-
-figure
-errorbar(1:1:length(filename),mean_D,err_mean_D,'o')
+% figure
+% errorbar(1:1:length(filename),mean_D,err_mean_D,'o')
 
 % figure
 % hold all
