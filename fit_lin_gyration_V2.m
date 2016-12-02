@@ -259,7 +259,7 @@ extract = struct('lin',extract_lin,...
     'ori',extract_ori,...
     'next',extract_next);
 
-saving_name = strcat('gyration_V2_',filename{k});
+saving_name = strcat('analyzed_',filename{k});
 
 save(saving_name,'extract')
 

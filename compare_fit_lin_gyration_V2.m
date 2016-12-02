@@ -19,12 +19,14 @@ if multiple == 1
     data_D_lin = cell(1,length(filename));
     name = cell(1,length(filename));
     mean_D = zeros(1,length(filename));
+    med_D = zeros(1,length(filename));
     err_mean_D = zeros(1,length(filename));
 elseif multiple == 0
     data_R_c = [];
     data_D_lin = [];
     name = [];
     mean_D = 0;
+    med_D = 0;
     err_mean_D = 0;
 end
 
@@ -45,13 +47,14 @@ for n  = 1:num
     elseif multiple == 0
         data_D_lin = res.lin.D_lin;
         [pD,nbinD] = hist(data_D_lin(data_D_lin > 0),20);
-        yyD = fit(nbinD(1:10)',pD(1:10)'/trapz(nbinD(1:10),pD(1:10)),'a*exp(-a*x)');
-        D0 = yyD.a;
+%         yyD = fit(nbinD(1:10)',pD(1:10)'/trapz(nbinD(1:10),pD(1:10)),'a*exp(-a*x)');
+%         D0 = yyD.a;
     end
     
     subplot(1,7,2)
     title('Ensemble averaged MSD')
     mean_D(n) = mean(res.lin.D_lin);
+    med_D(n) = median(res.lin.D_lin);
     err_mean_D(n) = std(res.lin.D_lin)/sqrt(numel(res.lin.D_lin)-1);
     t = 0:dt:(n_max-1)*dt;
     hold all
@@ -72,22 +75,26 @@ for n  = 1:num
         [p,nbin] = hist(step,20);
         hold all
         plot(nbin,(10^(n-1))*p/trapz(nbin,p),'o-','LineWidth',2)
+%         plot(nbin,p/trapz(nbin,p),'o-','LineWidth',2)
+
     end
     xlabel('\deltax (\mum)')
     ylabel('\phi(\deltax)')
     set(gca,'YScale','log')
     
     subplot(1,7,5)
-    title('Orientation correlation')
+    title('Distribution of angle')
     for i = 1:length(steps_hist)
         step = res.ori(steps_hist(i)).ori{1}(res.ori(steps_hist(i)).ori{1}(:) ~= 0);
-        [p,nbin] = hist(step,100);
+        [p,nbin] = hist(acos(step),50);
+% rose(acos(step),50)
         hold all
-        plot(nbin(4:end-4),(n-1)+p(4:end-4)/trapz(nbin,p),'o-','LineWidth',2)
-        plot([-1 1],[0.5+(n-1) 0.5+(n-1)],'k')
+        plot(nbin(4:end-4),0.5*(n-1)+p(4:end-4)/trapz(nbin,p),'o-','LineWidth',2)
+% plot(nbin(4:end-4),p(4:end-4)/trapz(nbin,p),'o-','LineWidth',2)
+%         plot([-1 1],[0.5+(n-1) 0.5+(n-1)],'k')
     end
-    xlabel('cos(\theta)')
-    ylabel('\phi(cos(\theta))')
+    xlabel('\theta')
+    ylabel('\phi(\theta)')
 %     set(gca,'YScale','log')
 
     subplot(1,7,6)
@@ -169,6 +176,9 @@ title('Diffusion calculated from linear fitting')
 % if multiple == 1
     h = distributionPlot(data_D_lin,'xName',name,'yLabel','Diffusion (\mum^2.s^{-1})',...
         'histOpt',2,'histOri','right','xyOri','flipped','showMM',4);
+
+%     h = distributionPlot(data_D_lin{2},'xName',name,'yLabel','Diffusion (\mum^2.s^{-1})',...
+%         'histOpt',2,'histOri','right','xyOri','flipped','showMM',4);
     for i = 1:length(h{1}(:))
         if i > 7
             set(h{1}(i),'FaceColor',vec_color(:,i-7));
@@ -194,8 +204,10 @@ h = distributionPlot(data_R_c,'xName',name,'yLabel','Radius of gyration (\mum)',
         end
     end
 
-% figure
-% errorbar(1:1:length(filename),mean_D,err_mean_D,'o')
+figure
+errorbar(1:1:length(filename),mean_D,err_mean_D,'bo')
+hold all
+plot(1:1:length(filename),med_D,'ro')
 
 % figure
 % hold all
